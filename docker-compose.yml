@@ -1,0 +1,60 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ufuk-koleji
+    container_name: ufuk-koleji-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    environment:
+      APP_NAME: "Ufuk Koleji"
+      APP_ENV: production
+      APP_KEY: "${APP_KEY:-base64:LqBuOffHdYVb2Sp9CJ7zaOsnKtbxYLVjPf6Q5fU9Myc=}"
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-ufuk_koleji}"
+      DB_USERNAME: "${DB_USERNAME:-ufuk}"
+      DB_PASSWORD: "${DB_PASSWORD:-ufuk_secret}"
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - app-storage:/var/www/html/storage/app/public
+    networks:
+      - ufuk
+
+  mysql:
+    image: mysql:8.0
+    container_name: ufuk-koleji-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE:-ufuk_koleji}"
+      MYSQL_USER: "${DB_USERNAME:-ufuk}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-ufuk_secret}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-ufuk_root_secret}"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_ROOT_PASSWORD:-ufuk_root_secret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - ufuk
+
+volumes:
+  mysql-data:
+  app-storage:
+
+networks:
+  ufuk:
+    driver: bridge
